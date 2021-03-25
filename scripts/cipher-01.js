@@ -3,8 +3,10 @@ const beta = "abcdefghijklmnopqrstuvwxyz";
 const revAlpha = "ZYXWVUTSRQPONMLKJIHGFEDCBA";
 const revBeta  = "zyxwvutsrqponmlkjihgfedcba";
 
+
 function shift(str, num) {
   return str
+    .toLowerCase()
     .split("")
     .map(char => { 
       if(char == char.toUpperCase()) {
@@ -17,7 +19,17 @@ function shift(str, num) {
       .join("");
 }
 
-function sentenceShift(str, num) {
+function wordShift(str, combo) {
+  let newStr = str.trim().split(" ");
+  return newStr
+    .map(word => {
+      let wordPos = newStr.indexOf(word);
+      return newStr[(wordPos + combo) % newStr.length]
+    })
+    .join(" ");
+}
+
+function sentenceShift(str, num, combo) {
   var skip = /\W/gi;
   //let space = " ";
   let puncRegex = /[.?!]/g;
@@ -30,24 +42,31 @@ function sentenceShift(str, num) {
   let newStr = str
     .split(splitFunc())
     .map(part => {
-      let skips = part.match(skip);
+      let newPart = part; //wordShift(part, combo);
+      let skips = newPart.match(skip);
       var skipSpots = [];
       var skipPos = 0;
       if(skips != null) {
         for(let i = 0; i < skips.length; i++) {
           posStart = skipPos;
-          skipPos = part.indexOf(skips[i], posStart);
+          skipPos = newPart.indexOf(skips[i], posStart);
           skipSpots.push(skipPos);
           skipPos++;
         }
       }
-      let joinedPart = part.split(skip).join("");
+      let joinedPart = newPart.split(skip).join("");
+      let jpL = joinedPart.length;
       let pos = -1;
       let shiftPart = joinedPart
         .split("")
         .map(char => {
           pos++;
-          return joinedPart[(pos + num) % joinedPart.length];
+          
+          return pos + num > -1 
+            ? joinedPart[(pos + num) % jpL]
+            : (jpL - Math.abs(pos + num) % jpL) != jpL
+            ? joinedPart[jpL - Math.abs(pos + num) % jpL]
+            : joinedPart[(jpL - Math.abs(pos + num))];
         });
       while(skipSpots.length > 0) {
         let temp = shiftPart.splice(skipSpots.shift(), 0, skips.shift());
@@ -59,7 +78,8 @@ function sentenceShift(str, num) {
       }
       return lastPart;
       })
-    .join("");
+    .join(" ");
+
   return newStr; 
 }
 
@@ -81,19 +101,21 @@ function codeMessage() {
 	let input = document.getElementById("input-text").value;
   let key01 = Math.abs(parseInt(document.getElementById("input-key-01").value));
   let key02 = Math.abs(parseInt(document.getElementById("input-key-02").value));
+  let combo = key01 + key02;
   let coded = shift(input, key01);
-  //console.log(coded);
-  let coded2 = sentenceShift(coded, key02);
-  //console.log(coded2);
+  let coded2 = sentenceShift(coded, key02, combo);
 	document.getElementById("output-text").innerHTML = coded2;
 }
 
+
+//this works with word shift turned off... and also only if the first number is under 10 maybe. more testing needed.
 function decodeMessage() {
   let input = document.getElementById("input-text").value;
   let key01 = -Math.abs(parseInt(document.getElementById("input-key-01").value));
   let key02 = -Math.abs(parseInt(document.getElementById("input-key-02").value));
+  let combo = -Math.abs(key01 + key02);
   let decoded = shift(input, key01);
-  let decoded2 = sentenceShift(decoded, key02)
+  let decoded2 = sentenceShift(decoded, key02, combo)
   document.getElementById("output-text").innerHTML = decoded2;
 }
 
